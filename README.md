@@ -54,7 +54,7 @@ Además, tenemos los siguientes ficheros:
 
 El fichero `mapeos.json` tiene que poder ser escrito por la aplicación php y el fichero `usuarios.json` debe poder ser leído por la aplicación php. 
 
-### Servicio bash
+### Servicio bash
 
 El servicio bash es el pegamento entre la aplicación PHP y el servidor nginx, así que es muy importante que esté bien configurado.
 
