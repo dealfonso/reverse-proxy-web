@@ -3,8 +3,13 @@
     require_once('config.php');
     require_once('util.php');
 
-    $res = autenticar();
-    [ $authenticated, $message ] = $res;
+    if (isset($_POST['login'])) {
+        $usuario = $_POST['usuario']??false;
+        $clave = $_POST['clave']??false;
+        $res = autenticar_local($usuario, $clave);
+    }
+
+    [ $authenticated, $message ] = $res??[false, "no se ha utilizado ningun metodo de autenticacion"];
 
     $errores = [];
 
@@ -13,8 +18,7 @@
         $usuarios = obtener_lista_usuarios();
         $login = $message;
         if (isset($usuarios->$login)) {
-            $_SESSION['usuario'] = $login;
-            header('Location: ' . __BASE_URL);
+            login_user($login);
             die();
         } else {
             array_push($errores, "el usuario no tiene permiso para usar la aplicación");

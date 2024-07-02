@@ -1,6 +1,8 @@
 <?php
 
 class Mappings {
+    protected $_mapeos;
+
     static function FromFile($fichero) {
         try {
             $mapeos = @file_get_contents($fichero);
@@ -72,8 +74,8 @@ class Mappings {
 
         $this->_mapeos[trim($dns)] = [
             "ip" => trim($ip),
-            "owner" => trim($owner),
-            "comment" => trim($comment),
+            "owner" => trim($owner??""),
+            "comment" => trim($comment??""),
             "portmap" => $portmap_f
         ];
         return true;

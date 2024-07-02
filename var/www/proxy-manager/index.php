@@ -1,9 +1,27 @@
 <?php
+session_start();
 require_once("config.php");
-require_once("login.php");
+require_once("util.php");
 
-if (! isset($_SESSION['usuario']))
+if (isset($_POST['logout'])) {
+    unset($_SESSION['usuario']);
+    session_destroy();
+}
+if (isset($_SESSION['usuario'])) {
+    $usuarios = obtener_lista_usuarios();
+    $usuario = $_SESSION['usuario'];
+
+    if (!isset($usuarios->$usuario)) {
+        array_push($errores, 'usuario no autorizado');
+        unset($_SESSION['usuario']);
+        session_destroy();
+    }
+}
+
+if (! isset($_SESSION['usuario'])) {
+    header('Location: ' . __BASE_URL . 'login.php');
     die();
+}
 
 require_once("externos/ip_in_range.php");
 require_once("mapeos.php");

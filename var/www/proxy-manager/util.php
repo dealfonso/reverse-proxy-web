@@ -1,4 +1,6 @@
 <?php
+require_once('config.php');
+require_once('externos/apr1_md5.php');
 
 $_ERRORES = [];
 
@@ -45,7 +47,20 @@ function obtener_lista_usuarios() {
     return $usuarios;
 }
 
-function autenticar($servidor = null) {
+function autenticar_local($usuario, $clave) {
+    $usuarios = obtener_lista_usuarios();
+
+    if (isset($usuarios->$usuario)) {
+        $valid = APR1_MD5::check($clave, $usuarios->$usuario);
+        if ($valid === true) {
+            return [ true, $usuario ];
+        } else {
+        }
+    }
+    return [ false, 'usuario o clave no validos' ];
+}
+
+function autenticar_UPV($servidor = null) {
     require_once('externos/SSO_UPV/openid.php');
 
     if ($servidor === null) {
@@ -79,4 +94,59 @@ function autenticar($servidor = null) {
         else
             return [ false, 'Invalid authentication' ];
     }		
+}
+
+function autenticar_Google() {
+    // If the captured code param exists and is valid
+    if (isset($_GET['code']) && !empty($_GET['code'])) {
+
+        // Execute cURL request to retrieve the access token
+        $params = [
+            'code' => $_GET['code'],
+            'client_id' => __GOOGLE_CLIENT_ID,
+            'client_secret' => __GOOGLE_CLIENT_SECRET,
+            'redirect_uri' => __GOOGLE_REDIRECT_URI,
+            'grant_type' => 'authorization_code'
+        ];
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://accounts.google.com/o/oauth2/token');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        $response = json_decode($response, true);
+        // Make sure access token is valid
+        if (isset($response['access_token']) && !empty($response['access_token'])) {
+            // Execute cURL request to retrieve the user info associated with the Google account
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, 'https://www.googleapis.com/oauth2/' . __GOOGLE_OAUTH_VERSION . '/userinfo');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $response['access_token']]);
+            $response = curl_exec($ch);
+            curl_close($ch);
+            $profile = json_decode($response, true);
+            // Make sure the profile data exists
+            if (isset($profile['email'])) {
+                return [ true, $profile['email'] ];
+            } else {
+                return [ false, 'Could not retrieve profile information! Please try again later!' ];
+            }
+        } else {
+            return [ false, 'Invalid access token! Please try again later!' ];
+        }
+    } else {
+        // Define params and redirect to Google Authentication page
+        $params = [
+            'response_type' => 'code',
+            'client_id' => __GOOGLE_CLIENT_ID,
+            'redirect_uri' => __GOOGLE_REDIRECT_URI,
+            // Solo hemos pedido el email, pero podríamos pedir más cosas (ver https://developers.google.com/identity/protocols/oauth2/scopes)
+            'scope' => 'https://www.googleapis.com/auth/userinfo.email',
+            'access_type' => 'offline',
+            'prompt' => 'consent'
+        ];
+        header('Location: https://accounts.google.com/o/oauth2/auth?' . http_build_query($params));
+        die();
+    }    
 }
